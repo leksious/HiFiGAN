@@ -47,5 +47,5 @@ class TrainerConfig:
     path_to_data = './data'
     seed = 42
     batch_size = 16
-
+    learning_rate = 2e-4
 
