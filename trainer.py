@@ -1,11 +1,11 @@
-from Discriminator import Discriminator
-from base_train import train
-from datasets import LJSpeechDataset
+from HiFiGAN.Discriminator import Discriminator
+from HiFiGAN.base_train import train
+from HiFiGAN.datasets import Batch, LJSpeechCollator, LJSpeechDataset
+
 import torch
 from torch.utils.data import random_split, DataLoader
-from colate_fn import LJSpeechCollator
-from Generator import Generator
-from utils import MelSpectrogram
+from HiFiGAN.Generator import Generator
+from HiFiGAN.utils import MelSpectrogram
 import wandb
 
 
@@ -41,6 +41,7 @@ def trainer(gen_config, mpd_conf, msd_conf, mel_config, train_config):
 
     mel_maker = MelSpectrogram(mel_config).to(device)
 
+
     opt_1 = torch.optim.AdamW(
         filter(lambda param: param.requires_grad, generator.parameters()),
         lr=train_config.learning_rate)
@@ -53,9 +54,6 @@ def trainer(gen_config, mpd_conf, msd_conf, mel_config, train_config):
 
     train(train_config, train_dataloader, val_dataloader, generator, opt_1, scheduler_1, discriminator,
           opt_2, scheduler_2, mel_maker, device)
-
-
-
 
 
 

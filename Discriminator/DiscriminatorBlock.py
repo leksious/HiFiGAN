@@ -29,13 +29,13 @@ class SubMPDDiscriminator(nn.Module):
         self.convolutions = nn.ModuleList(layers)
 
     def forward(self, x):
-        batch_size, channels, seq_len = x.shape
+        batch_size, seq_len = x.shape
 
         if seq_len % self.period != 0:
             x = F.pad(x, (0, self.period - seq_len % self.period), 'reflect')
             seq_len += self.period - seq_len % self.period
 
-        x = x.view(batch_size, channels, seq_len // self.period, self.period)
+        x = x.view(batch_size, 1, seq_len // self.period, self.period)
 
         feature_map = []
 
@@ -57,12 +57,14 @@ class SubMSDDiscriminator(nn.Module):
 
         channels = [128, 256, 512, 1024]
 
+        padding = 40 // 2
+
         layers = [nn.utils.weight_norm(nn.Conv1d(1, 128, kernel_size=15, stride=1, padding=7))]
         stride = [2, 4, 4]
 
         for i in range(3):
             layers.append(nn.utils.weight_norm(nn.Conv1d(channels[i], channels[i + 1], kernel_size, stride[i],
-                                                         groups=16, padding=(kernel_size - 1) // 2)))
+                                                         groups=16, padding=padding)))
         layers.append(nn.utils.weight_norm(nn.Conv1d(1024, 1024, kernel_size=41, stride=1, groups=16,
                                                      padding=(kernel_size - 1) // 2)))
         layers.append(nn.utils.weight_norm(nn.Conv1d(1024, 1024, kernel_size=5, padding=2)))
@@ -109,7 +111,7 @@ class MPD(nn.Module):
         discriminator_scores_pred = []
         for sub_layer in self.sub_layers:
             score_real, true_feature = sub_layer(wavs)
-            score_gen, gen_feature = sub_layer(hat_wavs)
+            score_gen, gen_feature = sub_layer(hat_wavs.squeeze(1))
             feature_maps_gt.append(true_feature)
             feature_maps_gen.append(gen_feature)
             discriminator_scores_true.append(score_real)
@@ -131,6 +133,7 @@ class MSD(nn.Module):
         feature_maps_gen = []
         discriminator_scores_true = []
         discriminator_scores_pred = []
+        wavs = wavs.unsqueeze(1)
         for sub_layer in self.sub_layers:
             score_real, true_feature = sub_layer(wavs)
             score_gen, gen_feature = sub_layer(hat_wavs)
@@ -157,5 +160,6 @@ class Discriminator(nn.Module):
 
         out_discr = {key: v_mpd + v_msd for (key, v_mpd, v_msd) in zip(NAMES, out_mpd, out_msd)}
         return out_discr
+
 
 

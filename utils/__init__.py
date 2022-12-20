@@ -1,2 +1,2 @@
-from .mel_spec import MelSpectrogram
-__all__ = ['MelSpectrogram']
+from .mel_spec import MelSpectrogram, MelSpectrogramConfig
+__all__ = ['MelSpectrogram', 'MelSpectrogramConfig']

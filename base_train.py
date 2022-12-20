@@ -2,7 +2,9 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import wandb
-from Losses import FeatureLoss, LossGenerator, MelLoss, DiscriminatorLoss
+# from HiFiGAN.Losses import FeatureLoss, LossGenerator, MelLoss, DiscriminatorLoss
+from HiFiGAN.Losses import AdversarialLoss, FeatureMatchingLoss, MelSpectrogramLoss, DiscriminatorLoss
+
 import numpy as np
 import random
 from tqdm import tqdm
@@ -13,24 +15,37 @@ def train_epoch(config, train_dataloader, generator, optimizer_generator, schedu
     generator.train()
     discriminator.train()
 
-    loss_a = LossGenerator()
-    loss_f = FeatureLoss()
-    loss_ms = MelLoss()
+    loss_a = AdversarialLoss()
+    loss_f = FeatureMatchingLoss()
+    loss_ms = MelSpectrogramLoss()
     loss_disc = DiscriminatorLoss()
 
     train_melspec_loss = 0
 
     for batch in train_dataloader:
-        batch = collator(batch, mel_maker, device, for_training=True)
+
+        mel_gt = batch.melspec.to(device)
+        wav_gt = batch.waveform.to(device)
 
         # учим генератор
-        wav_pred = generator(batch.melspec)
-        melspec_pred = mel_maker(wav_pred)
-        discr_output = discriminator(batch.waveform, wav_pred)
+        wav_pred = generator(mel_gt)
+        melspec_pred = mel_maker(wav_pred).squeeze(1)
 
-        loss_adv = loss_a(discr_output["gen"])
+        if wav_gt.size(-1) > wav_pred.size(-1):
+            pad = wav_gt.size(-1) - wav_pred.size(-1)
+            wav_pred = F.pad(wav_pred, (0, pad))
+        else:
+            pad = wav_pred.size(-1) - wav_gt.size(-1)
+            wav_gt = F.pad(wav_gt, (0, pad))
+
+        if melspec_pred.size(-1) > mel_gt.size(-1):
+            pad = melspec_pred.size(-1) - mel_gt.size(-1)
+            melspec_pred = melspec_pred[:, :, 0:mel_gt.size(-1) - pad + 1]
+        discr_output = discriminator(wav_gt, wav_pred)
+
+        loss_adv = loss_a(discr_output["gen"], )
         loss_fm = loss_f(discr_output["feature_maps_gt"], discr_output["feature_maps_gen"])
-        loss_mel = loss_ms(batch.melspec, melspec_pred)
+        loss_mel = loss_ms(mel_gt, melspec_pred)
         train_melspec_loss += loss_mel.item()
 
         loss_gen = loss_adv + 2 * loss_fm + 45 * loss_mel
@@ -49,8 +64,8 @@ def train_epoch(config, train_dataloader, generator, optimizer_generator, schedu
         # учим дискриминатор
         optimizer_discriminator.zero_grad()
 
-        wav_pred = generator(batch.melspec)
-        discr_output = discriminator(batch.waveform, wav_pred)
+        wav_pred = generator(mel_gt)
+        discr_output = discriminator(wav_gt, wav_pred)
         discr_loss = loss_disc(discr_output['g_t'], discr_output['gen'])
         discr_loss.backward()
         nn.utils.clip_grad_norm_(discriminator.parameters(), config.grad_norm_clip)
@@ -80,19 +95,17 @@ def val_epoch(config, val_dataloader, generator, discriminator, mel_maker, devic
 
     with torch.no_grad():
         for batch in val_dataloader:
-            batch = collator(
-                batch, mel_maker,
-                device, for_training=False
-            )
-            wav_fake = generator(batch.melspec)
+            mel_gt = batch.melspec.to(device)
+            wav_gt = batch.waveform.to(device)
+            wav_fake = generator(mel_gt)
             melspec_pred = mel_maker(wav_fake)
 
-            loss_mel = loss_mel(batch.melspec, melspec_pred)
+            loss_mel = loss_mel(mel_gt, melspec_pred)
             val_loss_mel += loss_mel.item()
 
             wandb.log({
                 "Mel Loss Val": loss_mel.item()})
-        id = np.random.randint(0, batch.waveform.shape[0])
+        id = np.random.randint(0, mel_gt.shape[0])
         wandb.log({
             "GT Spec": wandb.Image(batch.melspec[id].detach().cpu(), caption=batch.transcript[id].capitalize()),
             "Pred Spec": wandb.Image(melspec_pred[id].detach().cpu(), caption=batch.transcript[id].capitalize())})
@@ -131,36 +144,3 @@ def train(config, train_dataloader, val_dataloader, generator, optimizer_generat
                 "config": config
             }
             torch.save(state, config.path_to_save + "/best.pt")
-
-
-def collator(
-        batch,
-        mel_maker,
-        device: torch.device,
-        for_training: bool,
-        segment_size: int = 8192
-):
-    if for_training:
-        waveform_segment = []
-
-        for idx in range(batch.waveform.shape[0]):
-            waveform_length = batch.waveform_length[idx]
-            waveform = batch.waveform[idx][:waveform_length]
-
-            if waveform_length >= segment_size:
-                difference = waveform_length - segment_size
-                waveform_start = random.randint(0, difference - 1)
-                waveform_segment.append(
-                    waveform[waveform_start:waveform_start + segment_size]
-                )
-            else:
-                waveform_segment.append(
-                    F.pad(waveform, (0, segment_size - waveform_length))
-                )
-
-        batch.waveform = torch.vstack(waveform_segment)
-
-    batch.melspec = mel_maker(batch.waveform.to(device))
-    batch.melspec_loss = mel_maker(batch.waveform.to(device))
-
-    return batch.to(device)
