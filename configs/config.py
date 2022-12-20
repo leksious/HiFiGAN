@@ -42,7 +42,7 @@ class MelSpectrogramConfig:
 @dataclass
 class TrainerConfig:
     grad_norm_clip = 10
-    num_epochs = 10
+    num_epoch = 10
     path_to_save = 'saves'
     path_to_data = './data'
     seed = 42
