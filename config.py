@@ -12,22 +12,6 @@ class GeneratorConfig:
 
 
 @dataclass
-class ModelConfig:
-    batch_size: int = 3
-    device = torch.device('cuda')
-    num_workers: int = 4
-
-    mel_h: int = 80
-    n_out_initial_channels: int = 512
-
-    leaky: float = 0.1
-
-    kernel_size = [16, 16, 4, 4]
-    mrf_kernel_sizes = [3, 7, 11]
-    dilation = [[1, 3, 5], [1, 3, 5], [1, 3, 5]]
-
-
-@dataclass
 class MPDConfig:
     periods = [2, 3, 5, 7, 11]
     kernel_size = 5
@@ -60,3 +44,8 @@ class TrainerConfig:
     grad_norm_clip = 10
     num_epochs = 10
     path_to_save = 'saves'
+    path_to_data = './data'
+    seed = 42
+    batch_size = 16
+
+

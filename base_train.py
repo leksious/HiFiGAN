@@ -7,9 +7,9 @@ import numpy as np
 import random
 from tqdm import tqdm
 
+
 def train_epoch(config, train_dataloader, generator, optimizer_generator, scheduler_generator, discriminator,
                 optimizer_discriminator, scheduler_discriminator, mel_maker, device):
-
     generator.train()
     discriminator.train()
 
@@ -117,11 +117,10 @@ def train(config, train_dataloader, val_dataloader, generator, optimizer_generat
 
         loss_history.append(val_loss)
 
-        wandb.log({'epoch':epoch,
+        wandb.log({'epoch': epoch,
                    'Loss Train': train_loss,
                    'Loss_val': val_loss,
                    })
-
 
         if val_loss <= min(loss_history):
             state = {
@@ -132,11 +131,6 @@ def train(config, train_dataloader, val_dataloader, generator, optimizer_generat
                 "config": config
             }
             torch.save(state, config.path_to_save + "/best.pt")
-
-
-
-
-
 
 
 def collator(

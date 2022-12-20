@@ -151,11 +151,11 @@ class MSD(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config_mpd, config_msd, ):
         super().__init__()
 
-        self.multi_period_discriminator = MPD(config)
-        self.multi_scale_discriminator = MSD(config)
+        self.multi_period_discriminator = MPD(config_mpd)
+        self.multi_scale_discriminator = MSD(config_msd)
 
     def forward(self, wav_real, wav_fake):
         out_mpd = self.multi_period_discriminator(wav_real, wav_fake)
