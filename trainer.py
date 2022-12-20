@@ -6,10 +6,13 @@ from torch.utils.data import random_split, DataLoader
 from colate_fn import LJSpeechCollator
 from Generator import Generator
 from utils import MelSpectrogram
+import wandb
 
 
 def trainer(gen_config, mpd_conf, msd_conf, mel_config, train_config):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    wandb.init(project='HiFi GAN')
+
     dataset = LJSpeechDataset(train_config.path_to_data)
     train_size = int(0.975 * len(dataset))
     train_dataset, val_dataset = random_split(
