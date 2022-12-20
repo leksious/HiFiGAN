@@ -42,7 +42,6 @@ class MRF(nn.Module):
 class USBlock(nn.Module):
     def __init__(self, channels, init_conv_kernel_size, kernel_size, dilation):
         super().__init__()
-        print(init_conv_kernel_size)
         stride = init_conv_kernel_size // 2
         padding = (init_conv_kernel_size - stride) // 2
         out_channels = channels // 2

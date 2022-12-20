@@ -61,11 +61,11 @@ class SubMSDDiscriminator(nn.Module):
         stride = [2, 4, 4]
 
         for i in range(3):
-            layers.append(nn.utils.weight_norm(nn.Conv1d(1, channels[i], channels[i + 1], kernel_size, stride[i],
-                                                         groups=16, padding=20)))
-        layers.append(nn.utils.weight_norm(nn.Conv1d(1, 1024, 1024, 41, groups=16,
+            layers.append(nn.utils.weight_norm(nn.Conv1d(channels[i], channels[i + 1], kernel_size, stride[i],
+                                                         groups=16, padding=(kernel_size - 1) // 2)))
+        layers.append(nn.utils.weight_norm(nn.Conv1d(1024, 1024, kernel_size=41, stride=1, groups=16,
                                                      padding=(kernel_size - 1) // 2)))
-        layers.append(nn.utils.weight_norm(nn.Conv1d(1, 1024, 1024, kernel_size=5, padding=(kernel_size - 1) // 2)))
+        layers.append(nn.utils.weight_norm(nn.Conv1d(1024, 1024, kernel_size=5, padding=2)))
 
         layers.append(nn.utils.weight_norm(nn.Conv1d(1024, 1, kernel_size=3, padding=1)))
 
@@ -90,14 +90,6 @@ class SubMSDDiscriminator(nn.Module):
             i += 1
         x = torch.flatten(x, 1, -1)
         return x, feature_map
-
-
-class Discriminator(nn.Module):
-
-    def __init__(self, config):
-        super().__init__()
-        self.mpd = MPD(config)
-        self.msd = MSD(config)
 
 
 class MPD(nn.Module):
