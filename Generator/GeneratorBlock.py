@@ -30,7 +30,7 @@ class MRF(nn.Module):
 
     def forward(self, x):
         out = 0
-        for i, layer in self.blocks:
+        for i, layer in enumerate(self.blocks):
             if i == 0:
                 out = layer(x)
             else:
