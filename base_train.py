@@ -87,7 +87,7 @@ def val_epoch(config, val_dataloader, generator, discriminator, mel_maker, devic
     generator.eval()
     discriminator.eval()
 
-    loss_mel = MelLoss()
+    mel_loss = MelSpectrogramLoss()
 
     torch.cuda.empty_cache()
 
@@ -98,17 +98,21 @@ def val_epoch(config, val_dataloader, generator, discriminator, mel_maker, devic
             mel_gt = batch.melspec.to(device)
             wav_gt = batch.waveform.to(device)
             wav_fake = generator(mel_gt)
-            melspec_pred = mel_maker(wav_fake)
+            melspec_pred = mel_maker(wav_fake).squeeze()
 
-            loss_mel = loss_mel(mel_gt, melspec_pred)
+            if melspec_pred.size(-1) > mel_gt.size(-1):
+                pad = melspec_pred.size(-1) - mel_gt.size(-1)
+                melspec_pred = melspec_pred[:, :, 0:mel_gt.size(-1) - pad + 1]
+
+            loss_mel = mel_loss(mel_gt, melspec_pred)
             val_loss_mel += loss_mel.item()
 
             wandb.log({
                 "Mel Loss Val": loss_mel.item()})
         id = np.random.randint(0, mel_gt.shape[0])
         wandb.log({
-            "GT Spec": wandb.Image(batch.melspec[id].detach().cpu(), caption=batch.transcript[id].capitalize()),
-            "Pred Spec": wandb.Image(melspec_pred[id].detach().cpu(), caption=batch.transcript[id].capitalize())})
+            "GT Spec": wandb.Image(batch.melspec[id].detach().cpu()),
+            "Pred Spec": wandb.Image(melspec_pred[id].detach().cpu())})
 
     return val_loss_mel / len(val_dataloader)
 

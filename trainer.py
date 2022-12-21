@@ -1,5 +1,5 @@
 from HiFiGAN.Discriminator import Discriminator
-from HiFiGAN.base_train import train
+from HiFiGAN.base_train import train, val_epoch
 from HiFiGAN.datasets import Batch, LJSpeechCollator, LJSpeechDataset
 
 import torch
@@ -46,15 +46,14 @@ def trainer(gen_config, mpd_conf, msd_conf, mel_config, train_config):
         filter(lambda param: param.requires_grad, generator.parameters()),
         lr=train_config.learning_rate)
 
-    scheduler_1 = torch.optim.lr_scheduler.LinearLR(opt_1, 0.99)
+    scheduler_1 = torch.optim.lr_scheduler.LinearLR(opt_1, 0.9)
     opt_2 = torch.optim.AdamW(
         filter(lambda param: param.requires_grad, discriminator.parameters()),
         lr=train_config.learning_rate)
-    scheduler_2 = torch.optim.lr_scheduler.LinearLR(opt_2, 0.99)
+    scheduler_2 = torch.optim.lr_scheduler.LinearLR(opt_2, 0.9)
 
     train(train_config, train_dataloader, val_dataloader, generator, opt_1, scheduler_1, discriminator,
           opt_2, scheduler_2, mel_maker, device)
-
 
 
 
