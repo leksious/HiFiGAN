@@ -9,11 +9,6 @@ class GeneratorConfig:
     kernel_res = [3, 5, 7]
     dilation = [[1, 2], [2, 6], [3, 12]]
     pre_channels = 256
-#     n_mels = 80
-#     initial_channels = 256
-#     upsample_kernel_sizes = [16, 16, 8]
-#     resblock_kernel_sizes =  [3, 5, 7]
-#     dilation_rates =  [[1, 2], [2, 6], [3, 12]],
 
 
 
@@ -49,12 +44,13 @@ class MelSpectrogramConfig:
 @dataclass
 class TrainerConfig:
     grad_norm_clip = 10
-    num_epoch = 10
+    num_epoch = 90
     path_to_save = 'saves'
     path_to_data = './data'
     seed = 4
     batch_size = 16
     learning_rate = 2e-4
-
+    # chckp = 'saves/best.pt'
+    chckp = None
 
 

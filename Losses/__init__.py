@@ -1,2 +1,2 @@
-from .losses import FeatureLoss, LossGenerator, MelLoss, DiscriminatorLoss
-__all__ = ['FeatureLoss', 'LossGenerator', 'MelLoss', 'DiscriminatorLoss']
+from .losses import AdversarialLoss, FeatureMatchingLoss, MelSpectrogramLoss, DiscriminatorLoss
+__all__ = ['AdversarialLoss', 'FeatureMatchingLoss', 'MelSpectrogramLoss', 'DiscriminatorLoss']

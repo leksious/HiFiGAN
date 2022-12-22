@@ -64,5 +64,3 @@ class MelSpectrogram(nn.Module):
             .log_()
 
         return mel
-
-

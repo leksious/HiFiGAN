@@ -18,7 +18,6 @@ def trainer(gen_config, mpd_conf, msd_conf, mel_config, train_config):
     train_dataset, val_dataset = random_split(
         dataset,
         [train_size, len(dataset) - train_size],
-        generator=torch.Generator().manual_seed(train_config.seed)
     )
 
     train_dataloader = DataLoader(
@@ -41,23 +40,22 @@ def trainer(gen_config, mpd_conf, msd_conf, mel_config, train_config):
 
     mel_maker = MelSpectrogram(mel_config).to(device)
 
-
     opt_1 = torch.optim.AdamW(
         filter(lambda param: param.requires_grad, generator.parameters()),
-        lr=train_config.learning_rate)
+        lr=train_config.learning_rate, betas=(0.8, 0.99), weight_decay=0.01)
 
-    scheduler_1 = torch.optim.lr_scheduler.LinearLR(opt_1, 0.9)
+    scheduler_1 = torch.optim.lr_scheduler.StepLR(opt_1, step_size=1, gamma=0.999)
     opt_2 = torch.optim.AdamW(
         filter(lambda param: param.requires_grad, discriminator.parameters()),
-        lr=train_config.learning_rate)
-    scheduler_2 = torch.optim.lr_scheduler.LinearLR(opt_2, 0.9)
+        lr=train_config.learning_rate, betas=(0.8, 0.99), weight_decay=0.01)
+    scheduler_2 = torch.optim.lr_scheduler.StepLR(opt_2, step_size=1, gamma=0.999)
+
+    if train_config.chckp is not None:
+        chckp = torch.load('saves/best.pt')
+        generator.load_state_dict(chckp['generator'])
+        discriminator.load_state_dict(chckp['discriminator'])
+        opt_1.load_state_dict(chckp['optimizer_generator'])
+        opt_2.load_state_dict(chckp['optimizer_discriminator'])
 
     train(train_config, train_dataloader, val_dataloader, generator, opt_1, scheduler_1, discriminator,
           opt_2, scheduler_2, mel_maker, device)
-
-
-
-
-
-
-

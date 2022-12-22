@@ -149,17 +149,16 @@ class Discriminator(nn.Module):
     def __init__(self, config_mpd, config_msd, ):
         super().__init__()
 
-        self.multi_period_discriminator = MPD(config_mpd)
-        self.multi_scale_discriminator = MSD(config_msd)
+        self.MPD = MPD(config_mpd)
+        self.MSD = MSD(config_msd)
 
     def forward(self, wav_real, wav_fake):
-        out_mpd = self.multi_period_discriminator(wav_real, wav_fake)
-        out_msd = self.multi_scale_discriminator(wav_real, wav_fake)
+        out_mpd = self.MPD(wav_real, wav_fake)
+        out_msd = self.MSD(wav_real, wav_fake)
 
         NAMES = ["g_t", "gen", "feature_maps_gt", "feature_maps_gen"]
 
         out_discr = {key: v_mpd + v_msd for (key, v_mpd, v_msd) in zip(NAMES, out_mpd, out_msd)}
         return out_discr
-
 
 
